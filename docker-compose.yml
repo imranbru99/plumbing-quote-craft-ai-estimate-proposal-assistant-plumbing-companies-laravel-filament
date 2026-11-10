@@ -1,0 +1,61 @@
+services:
+  app:
+    build: .
+    container_name: plumbingquotecraft_app
+    ports:
+      - "8116:8000"
+    environment:
+      APP_NAME: PlumbingQuoteCraft
+      APP_ENV: local
+      APP_DEBUG: "true"
+      APP_URL: http://localhost:8116
+      APP_KEY: "base64:+uppR9lGxta7KD23kRCA2MPrdmpLLqOEXQEaR4bHlpw="
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: plumbingquotecraft
+      DB_USERNAME: pqc
+      DB_PASSWORD: secret
+      CACHE_STORE: file
+      QUEUE_CONNECTION: database
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      SESSION_DRIVER: database
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    volumes:
+      - ./storage:/var/www/html/storage
+    restart: unless-stopped
+
+  mysql:
+    image: mysql:8.4
+    command: ['--character-set-server=utf8mb4','--collation-server=utf8mb4_unicode_ci']
+    container_name: plumbingquotecraft_mysql
+    environment:
+      MYSQL_DATABASE: plumbingquotecraft
+      MYSQL_USER: pqc
+      MYSQL_PASSWORD: secret
+      MYSQL_ROOT_PASSWORD: rootsecret
+    ports:
+      - "33076:3306"
+    volumes:
+      - pqc_mysql:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-prootsecret"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: plumbingquotecraft_redis
+    ports:
+      - "63806:6379"
+    restart: unless-stopped
+
+volumes:
+  pqc_mysql:
